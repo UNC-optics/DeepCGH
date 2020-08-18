@@ -1,3 +1,6 @@
+![header](./header.png)
+Format: ![Alt Text](url)
+
 # DeepCGH: 3D computer generated holography using deep learning
 DeepCGH is an *unsupervised*, *non-iterative* algorithm for computer generated holography. DeepCGH relies on convolutional neural networks to perform *image plane* holography in real-time.
 For more details regarding the structure and algorithm refer to the associated manuscript [1].
@@ -23,7 +26,8 @@ After the installation of packages is complete, you can clone this repository to
 ## Usage
 ### For Users
 After cloning the repository (see previous section), you can run the demo `demo_infinity_loop.py` for a simple inifinity loop example. In this demo:
-1. First, the parameters of the simulated training dataset are determined:
+
+First, the parameters of the simulated training dataset are determined:
 ```
 data = {
         'path' : 'DeepCGH_Datasets/Disks',
@@ -56,6 +60,12 @@ The parameters in this dictionary are:
 11. `'file_format'` : determines the file format. Either `'tfrecords'` or `'hdf5'`.
 12. `'compression'` : compression format for `tfrecords` dataset. Keep 'GZIP'.
 13. `'name'` : the name used in `frecords` for the input of dataset. TODO: more details and features coming soon.
+
+Please don't leave any of these fields empty even if they are not relevant to the characteristics you have in mind.
+
+
+
+
 ### For Developers
 Coming soon (how to change the model structure, how to change the loss function, etc).
 
