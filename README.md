@@ -63,11 +63,29 @@ The parameters in this dictionary are:
 
 Please don't leave any of these fields empty even if they are not relevant to the characteristics you have in mind.
 
-Second, the parameters of the model have to be determines. The structure of the CNN is as follows:
+Second, the parameters of the model have to be determined. The structure of the CNN is as follows:
 
 ![struct](./struct.png)
 
-As can be seen on panel (d) the U-Net consists of three convolutional levels. The number of convolutional kernels at each levvel is determined by the `n_kernels` parameter. Accordingly, the parameters of the model are described bellow:
+As can be seen on panel (d) the U-Net consists of three convolutional levels. The number of convolutional kernels at each levvel is determined by the `n_kernels` parameter. All the parameters are specified in a dictionary:
+```
+model = {
+        'path' : 'DeepCGH_Models/Disks',
+        'int_factor':16,
+        'n_kernels':[ 128, 256, 512],
+        'plane_distance':0.005,
+        'wavelength':1e-6,
+        'pixel_size':0.000015,
+        'input_name':'target',
+        'output_name':'phi_slm',
+        'lr' : 1e-3,
+        'batch_size' : 4,
+        'epochs' : 1,
+        'token' : '',
+        'max_steps' : 100
+        }
+```
+Accordingly, the parameters of the model are described bellow:
 1. `'path'` : the path to save the checkpoints of the model as it is being trained.
 2. `'int_factor'` : the interleaving factor. Refer to the manuscript for tips on determining the right values.
 3. `'n_kernels'` : number of kernels for each convolutional level
