@@ -3,7 +3,7 @@
 
 # DeepCGH: 3D computer generated holography using deep learning
 DeepCGH is an *unsupervised*, *non-iterative* algorithm for computer generated holography. DeepCGH relies on convolutional neural networks to perform *image plane* holography in real-time.
-For more details regarding the structure and algorithm refer to the [associated manuscript](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-28-18-26636).
+For more details regarding the structure and algorithm refer to the [associated manuscript](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-28-18-26636) [1]. Please see the [**copyright notice**] (copyright.pdf).
 
 ## Installation Guide and Dependencies:
 Here we provide a Python and Tensorflow implementation of DeepCGH. The current version of this software does not require explciit installation. Dependencies include:
@@ -123,4 +123,8 @@ dcgh.get_hologram(data)
 
 ### For Developers
 Coming soon (how to change the model structure, how to change the loss function, etc).
+
+
+### Citation
+[1] M. Hossein Eybposh, Nicholas W. Caira, Mathew Atisa, Praneeth Chakravarthula, and Nicolas C. Pégard, "DeepCGH: 3D computer-generated holography using deep learning," Opt. Express 28, 26636-26650 (2020)
 
