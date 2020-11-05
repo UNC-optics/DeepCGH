@@ -6,7 +6,7 @@ Created on Mon Jul 13 15:18:10 2020
 @author: hoss
 """
 import tensorflow as tf
-from deepcgh_new import DeepCGH_Datasets, DeepCGH
+from deepcgh import DeepCGH_Datasets, DeepCGH
 from time import time
 import numpy as np
 from glob import glob
