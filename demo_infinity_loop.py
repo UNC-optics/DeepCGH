@@ -29,7 +29,6 @@ data = {
         'centralized' : False,
         'N' : 10000,
         'train_ratio' : 9000/10000,
-        'file_format' : 'tfrecords',
         'compression' : 'GZIP',
         'name' : 'target',
         }
@@ -61,7 +60,12 @@ path = dset.getDataset()
 dcgh = DeepCGH(data, model)
 
 if retrain:
-    dcgh.train(path, model['lr'], model['batch_size'], model['epochs'], model['token'], model['max_steps'])
+    dcgh.train(path,
+               model['lr'],
+               model['batch_size'],
+               model['epochs'],
+               model['token'],
+               model['max_steps'])
     
 #
 while(True):

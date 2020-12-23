@@ -22,7 +22,6 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Add, Input, Concatenate, Lambda
 from tensorflow.keras.layers import Conv2D, BatchNormalization
 from tensorflow.keras.layers import MaxPooling2D, UpSampling2D
-from tensorflow.keras.utils import HDF5Matrix
 
 #%%
 class DeepCGH_Datasets(object):
@@ -37,7 +36,6 @@ class DeepCGH_Datasets(object):
     '''
     def __init__(self, params):
         try:
-            assert params['file_format'] in ['hdf5', 'tfrecords'], 'file format not supported'
             assert params['object_type'] in ['Disk', 'Line', 'Dot'], 'Object type not supported'
             
             self.path = params['path']
@@ -50,7 +48,6 @@ class DeepCGH_Datasets(object):
             self.name = params['name']
             self.object_type = params['object_type']
             self.centralized = params['centralized']
-            self.file_format = params['file_format']
             self.normalize = params['normalize']
             self.compression = params['compression']
         except:
@@ -65,13 +62,12 @@ class DeepCGH_Datasets(object):
         print('Current working directory is:')
         print(os.getcwd(),'\n')
         
-        self.filename = self.object_type + '_SHP{}_N{}_SZ{}_INT{}_Crowd{}_CNT{}_Split.{}'.format(self.shape, 
+        self.filename = self.object_type + '_SHP{}_N{}_SZ{}_INT{}_Crowd{}_CNT{}_Split.tfrecords'.format(self.shape, 
                                            self.N, 
                                            self.object_size,
                                            self.intensity, 
                                            self.object_count,
-                                           self.centralized,
-                                           self.file_format)
+                                           self.centralized)
         
         self.absolute_file_path = os.path.join(os.getcwd(), self.path, self.filename)
         if not (os.path.exists(self.absolute_file_path.replace('Split', '')) or os.path.exists(self.absolute_file_path.replace('Split', 'Train')) or os.path.exists(self.absolute_file_path.replace('Split', 'Test'))):
@@ -296,53 +292,6 @@ class DeepCGH_Datasets(object):
         return sample
     
     
-    def __h5py(self):
-        '''
-        Creates a dataset of randomly located blobs and stores the data in an HDF5 file. Each sample (3D image) contains
-        a randomly determined number of blobs that are randomly located in individual planes.
-        Inputs:
-            filename : str
-                path to the hdf5 file
-            N: int
-                determines the number of samples in the dataset
-            fraction : float
-                determines the fraction of N that is used as "train". The rest will be the "test" data
-            shape: (int, int)
-                tuple of integers, shape of the 2D planes
-            maxnum: int
-                determines the max number of blobs
-            radius: int
-                determines the radius of the blobs
-            intensity : float or [float, float]
-                intensity of the blobs. If a scalar, it's a binary blob. If a list, first element is the min intensity and
-                second one os the max intensity.
-            normalize : bool
-                flag that determines whether the 3D data is normalized for fixed energy from plane to plane
-    
-        Outputs:
-            aa:
-    
-            out_dataset:
-                numpy.ndarray. Numpy array with shape (samples, x, y)
-        '''
-        
-#        assert self.shape[-1] > 1, 'Wrong dimensions {}. Number of planes cannot be {}'.format(self.shape, self.shape[-1])
-        
-        with h5.File(self.absolute_file_path.replace('Split', ''),'w') as f:
-            train_size = np.floor(self.ratio * self.N)
-            tr_dset = f.create_dataset('train', shape = (train_size, ) + self.shape, dtype = np.float32)
-            te_dset = f.create_dataset('test', shape = (self.N-train_size, ) + self.shape, dtype = np.float32)
-    
-            for i in tqdm(range(self.N)):
-                
-                sample = self.__make_sample()
-                
-                if i < train_size:
-                    tr_dset[i, :, :, :] = sample
-                else:
-                    te_dset[i-train_size, :, :, :] = sample
-    
-    
     def __bytes_feature(self, value):
         return tf.train.Feature(bytes_list = tf.train.BytesList(value = [value]))
     
@@ -351,13 +300,13 @@ class DeepCGH_Datasets(object):
       return tf.train.Feature(int64_list = tf.train.Int64List(value = [value]))
     
     
-    def __tfrecords(self):
+    def __generate(self):
         '''
         Creates a dataset of randomly located blobs and stores the data in an TFRecords file. Each sample (3D image) contains
         a randomly determined number of blobs that are randomly located in individual planes.
         Inputs:
             filename : str
-                path to the hdf5 file
+                path to the dataset file
             N: int
                 determines the number of samples in the dataset
             fraction : float
@@ -407,13 +356,6 @@ class DeepCGH_Datasets(object):
                         writer_train.write(example_to_string)
                     else:
                         writer_test.write(example_to_string)
-        
-    
-    def __generate(self):
-        if self.file_format == 'hdf5': # it means it's 3D/multiplane
-            self.__h5py()
-        else:
-            self.__tfrecords()
             
     
     def getDataset(self):
@@ -425,10 +367,7 @@ class DeepCGH_Datasets(object):
                 os.makedirs(folder)
             
             self.__generate()
-        if self.file_format == 'tfrecords':
-            return [self.absolute_file_path.replace('Split', 'Train'), self.absolute_file_path.replace('Split', 'Test')]
-        else:
-            return self.absolute_file_path.replace('Split', '')
+        return [self.absolute_file_path.replace('Split', 'Train'), self.absolute_file_path.replace('Split', 'Test')]
         
      
 
@@ -547,15 +486,8 @@ class DeepCGH(object):
                 return train
             #.repeat(epochs)
             return train_func, val_func
-        
-        elif 'hdf5' in path:
-            train = HDF5Matrix(path, 'train')
-            with h5.File(path, 'r') as f:
-                validation = f['test'][:].astype(np.float32)
         else:
             raise('You got a problem in your file name bruh')
-            
-        return train, validation
     
         
     def __generate_from_queue(self):
