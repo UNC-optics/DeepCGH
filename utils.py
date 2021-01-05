@@ -57,7 +57,7 @@ def get_propagate(data, model):
         i_phi_slm = tf.dtypes.complex(np.float32(0.), tf.squeeze(phi_slm, axis=-1))
         return tf.math.exp(i_phi_slm)
 
-    Hs = __get_H(self.zs, self.shape, self.wavelength, self.ps)
+    Hs = __get_H(zs, shape, wavelength, ps)
 
     def propagate(phi_slm):
         frames = []
