@@ -63,10 +63,10 @@ def get_propagate(data, model):
     def propagate(phi_slm):
         frames = []
         cf_slm = __phi_slm(phi_slm)
-        for H, z in zip(Hs, self.zs):
+        for H, z in zip(Hs, zs):
             frames.append(__prop__(cf_slm, tf.keras.backend.constant(H, dtype=tf.complex64)))
 
-        frames.insert(self.shape[-1] // 2, __prop__(cf_slm, center=True))
+        frames.insert(shape[-1] // 2, __prop__(cf_slm, center=True))
 
         return tf.concat(values=frames, axis=-1)
     return propagate
