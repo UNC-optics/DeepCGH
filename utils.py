@@ -19,14 +19,20 @@ def display_results(imgs, phases, recons, t):
         if img.shape[-1] == 1:
             fig, axs = plt.subplots(1, 3, figsize=(9, 3), sharey=True, sharex=True)
             axs[0].imshow(np.squeeze(img), cmap='gray')
+            axs[0].set_title('Target')
             axs[1].imshow(np.squeeze(phase), cmap='gray')
+            axs[1].set_title('SLM Phase')
             axs[2].imshow(np.squeeze(recon), cmap='gray')
+            axs[2].set_title('Simulation')
         else:
             fig, axs = plt.subplots(2, img.shape[-1] + 1, figsize = (3 * (img.shape[-1] + 1), 6), sharey = True, sharex = True)
             axs[0, -1].imshow(np.squeeze(phase))
+            axs[0, -1].set_title('SLM Phase')
             for i in range(img.shape[-1]):
                 axs[0, i].imshow(img[:, :, i], cmap='gray')
+                axs[0, i].set_title('Target')
                 axs[1, i].imshow(recon[:, :, i], cmap='gray')
+                axs[0, i].set_title('Simulation')
         fig.suptitle('Inference time was {:.2f}ms'.format(t*1000), fontsize=16)
 
 def get_propagate(data, model):
