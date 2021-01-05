@@ -23,10 +23,10 @@ def display_results(imgs, phases, recons, t):
             axs[2].imshow(np.squeeze(recon), cmap='gray')
         else:
             fig, axs = plt.subplots(2, img.shape[-1] + 1, figsize = (3 * (img.shape[-1] + 1), 6), sharey = True, sharex = True)
-            axs[-1].imshow(phase)
+            axs[0, -1].imshow(np.squeeze(phase))
             for i in range(img.shape[-1]):
-                axs[i].imshow(img[:, :, i], cmap='gray')
-                axs[i + img.shape[-1]].imshow(recon[:, :, i], cmap='gray')
+                axs[0, i].imshow(img[:, :, i], cmap='gray')
+                axs[1, i].imshow(recon[:, :, i], cmap='gray')
         fig.suptitle('Inference time was {:.2f}ms'.format(t*1000), fontsize=16)
 
 def get_propagate(data, model):
