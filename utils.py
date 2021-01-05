@@ -12,7 +12,7 @@ def gs(img, k):
         k -= 1
     return np.square(np.abs(img_cf))
 
-def display_results(imgs, phases, recons):
+def display_results(imgs, phases, recons, t):
     assert imgs.ndim == 4 and phases.ndim == 4 and recons.ndim == 4, "Dimensions don't match"
     for img, phase, recon in zip(imgs, phases, recons):
         if img.shape[-1] == 1:
@@ -26,6 +26,7 @@ def display_results(imgs, phases, recons):
             for i in range(img.shape[-1]):
                 axs[i].imshow(img[:, :, i], cmap='gray')
                 axs[i + img.shape[-1]].imshow(recon[:, :, i], cmap='gray')
+        fig.suptitle('Inference time was {:.2f}ms'.format(t*1000), fontsize=16)
 
 def get_propagate(data, model):
     shape = data['shape']
