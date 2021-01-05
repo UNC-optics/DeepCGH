@@ -3,15 +3,15 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 
 def gs(img, k):
-    phi = np.random.rand(img.shape)
-    while K:
-        img_cf = img * np.exp(1j * phi)
+    phi = np.random.rand(*list(img.shape)).astype(np.float32)
+    while k:
+        img_cf = img * np.exp(1.j * phi)
         slm_cf = np.fft.ifft2(img_cf)
         slm_cf = 1 * np.exp(1j * np.angle(slm_cf))
         img_cf = np.fft.fft2(slm_cf)
         phi = np.angle(img_cf)
         k -= 1
-    return np.square(np.abs(img_cf))
+    return np.square(np.angle(img_cf))
 
 def display_results(imgs, phases, recons, t):
     assert imgs.ndim == 4 and phases.ndim == 4 and recons.ndim == 4, "Dimensions don't match"
