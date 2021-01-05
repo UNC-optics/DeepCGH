@@ -411,7 +411,7 @@ class DeepCGH(object):
         
         
     def __check_avalability(self):
-        print('Current working directory is:')
+        print('Looking for trained models in:')
         print(os.getcwd(), '\n')
         
         self.filename = 'Model_{}_SHP{}_IF{}_Dst{}_WL{}_PS{}_CNT{}_{}'.format(self.object_type,
@@ -426,10 +426,10 @@ class DeepCGH(object):
         self.absolute_file_path = os.path.join(os.getcwd(), self.path, self.filename)
         
         if not os.path.exists(self.absolute_file_path):
-            print('Folder does not exist. Call the train method. The folder with all the checkpoints should be: \n {}'.format(self.absolute_file_path))
+            print('No trained models found. Please call the `train` method. \nModel checkpoints will be stored in: \n {}'.format(self.absolute_file_path))
             
         else:
-            print('Folder already exists.')
+            print('Model already exists.')
     
     
     def __make_folders(self):
