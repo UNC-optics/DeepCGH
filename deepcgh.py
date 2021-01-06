@@ -55,8 +55,6 @@ class DeepCGH_Datasets(object):
             
         self.__check_avalability()
         
-        
-        
     
     def __check_avalability(self):
         print('Current working directory is:')
@@ -141,6 +139,7 @@ class DeepCGH_Datasets(object):
         start = (np.random.randint(0, shape[0]), np.random.randint(0, shape[1]))
         end = (np.random.randint(0, shape[0]), np.random.randint(0, shape[1]))
         return start, end
+
 
     #% there shouldn't be any overlap between the two circles 
     def __get_RandDots(self, shape, maxnum = [10, 20]):
@@ -258,10 +257,9 @@ class DeepCGH_Datasets(object):
         sample /= sample.max()
         
         return np.expand_dims(sample, axis = 0)
-            
                 
     
-    def __make_sample(self):
+    def get_randSample(self):
         
         num_planes = self.shape[-1]
         
@@ -339,7 +337,7 @@ class DeepCGH_Datasets(object):
         with tf.io.TFRecordWriter(self.absolute_file_path.replace('Split', 'Train'), options = options) as writer_train:
             with tf.io.TFRecordWriter(self.absolute_file_path.replace('Split', 'Test'), options = options) as writer_test:
                 for i in tqdm(range(self.N)):
-                    sample = self.__make_sample()
+                    sample = self.get_randSample()
                     
                     image_raw = sample.tostring()
                     
