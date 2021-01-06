@@ -77,5 +77,3 @@ def get_propagate(data, model):
 
         return tf.concat(values=frames, axis=-1)
     return propagate
-
-def get_randSample(data):
