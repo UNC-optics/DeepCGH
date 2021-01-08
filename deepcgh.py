@@ -372,7 +372,7 @@ class DeepCGH_Datasets(object):
 #%%
 class DeepCGH(object):
     '''
-    Class for the GS algorithm.
+    Class for the DeepCGH algorithm.
     Inputs:
         batch_size   int, determines the batch size of the prediction
         num_iter   int, determines the number of iterations of the GS algorithm
@@ -397,7 +397,7 @@ class DeepCGH(object):
         self.input_name = model_params['input_name']
         self.output_name = model_params['output_name']
         self.token = model_params['token']
-        self.zs = [-0.005*x for x in np.arange(1, (self.shape[-1]-1)//2+1)][::-1] + [0.005*x for x in np.arange(1, (self.shape[-1]-1)//2+1)]
+        self.zs = [-1*self.plane_distance*x for x in np.arange(1, (self.shape[-1]-1)//2+1)][::-1] + [self.plane_distance*x for x in np.arange(1, (self.shape[-1]-1)//2+1)]
         self.input_queue = Queue(maxsize=4)
         self.output_queue = Queue(maxsize=4)
         self.__check_avalability()

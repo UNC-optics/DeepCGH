@@ -2,9 +2,77 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
-def gs(img, k):
+
+class GS3D(object):
+    '''
+    Class for the GS algorithm.
+    Inputs:
+        batch_size   int, determines the batch size of the prediction
+        num_iter   int, determines the number of iterations of the GS algorithm
+        input_shape   tuple of shape (height, width)
+    Returns:
+        Instance of the object
+    '''
+    def __init__(self,
+                 data_params,
+                 model_params):
+        self.shape = data_params['shape']
+        self.plane_distance = model_params['plane_distance']
+        self.wavelength = model_params['wavelength']
+        self.ps = model_params['pixel_size']
+        self.model = model_params
+        self.zs = [-0.005*x for x in np.arange(1, (self.shape[-1]-1)//2+1)][::-1] + [0.005*x for x in np.arange(1, (self.shape[-1]-1)//2+1)]
+        self.Hs = self.__get_H(self.zs, self.shape, self.wavelength, self.ps)
+
+    def __get_H(self, zs, shape, lambda_, ps):
+        Hs = []
+        for z in zs:
+            x, y = np.meshgrid(np.linspace(-shape[1]//2+1, shape[1]//2, shape[1]),
+                               np.linspace(-shape[0]//2+1, shape[0]//2, shape[0]))
+            fx = x/ps/shape[0]
+            fy = y/ps/shape[1]
+            exp = np.exp(-1j * np.pi * lambda_ * z * (fx**2 + fy**2))
+            Hs.append(np.fft.fftshift(exp.astype(np.complex64)))
+        Hs.insert(self.shape[-1] // 2, 0)
+        return Hs
+
+    def __propagate(self, cf, H):
+        return np.fft.ifft2(np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(cf))*H))
+
+    def __forward(self, cf_slm, Hs, As):
+        new_Z = []
+        z0 = np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(cf_slm)))
+        for H, A in zip(Hs, As):
+            if H:
+                new_Z.append(A*np.exp(1j*np.angle(self.__propagate(z0, H))))
+            else:
+                new_Z.append(A*np.exp(1j*np.angle(z0)))
+        return new_Z
+
+    def __backward(self, Zs, Hs):
+        slm_cfs = []
+        for Z, H in zip(Zs, Hs[::-1]):
+            if H:
+                slm_cfs.append(np.fft.ifft2(np.fft.ifftshift(self.__propagate(Z, H))))
+            else:
+                slm_cfs.append(np.fft.ifft2(np.fft.ifftshift(Z)))
+        cf_slm = np.exp(1j*np.angle(np.sum(np.array(slm_cfs))))
+        return cf_slm
+
+    def get_phase(self, As, K):
+        cf_slm = np.exp(1j * np.random.rand(*As.shape[:-1]))
+        while K:
+            new_Zs = self.__forward(cf_slm, self.Hs, As)
+            cf_slm = self.__backward(new_Zs, self.Hs)
+            k -= 1
+        return np.angle(cf_slm)
+
+
+
+
+def gs2d(img, K):
     phi = np.random.rand(*list(img.shape)).astype(np.float32)
-    while k:
+    while K:
         img_cf = img * np.exp(1.j * phi)
         slm_cf = np.fft.ifft2(np.fft.ifftshift(img_cf))
         slm_phi = np.angle(slm_cf)
