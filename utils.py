@@ -56,7 +56,7 @@ class GS3D(object):
                 slm_cfs.append(np.fft.ifft2(np.fft.ifftshift(self.__propagate(Z, H))))
             else:
                 slm_cfs.append(np.fft.ifft2(np.fft.ifftshift(Z)))
-        cf_slm = np.exp(1j*np.angle(np.sum(np.array(slm_cfs), axis=0))))
+        cf_slm = np.exp(1j*np.angle(np.sum(np.array(slm_cfs), axis=0)))
         return cf_slm
 
     def get_phase(self, As, K):
