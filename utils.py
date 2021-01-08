@@ -33,7 +33,7 @@ class GS3D(object):
             fy = y/ps/shape[1]
             exp = np.exp(-1j * np.pi * lambda_ * z * (fx**2 + fy**2))
             Hs.append(np.fft.fftshift(exp.astype(np.complex64)))
-        Hs.insert(self.shape[-1] // 2, 0)
+        Hs.insert(shape[-1] // 2, 0)
         return Hs
 
     def __propagate(self, cf, H):
@@ -56,7 +56,7 @@ class GS3D(object):
                 slm_cfs.append(np.fft.ifft2(np.fft.ifftshift(self.__propagate(Z, H))))
             else:
                 slm_cfs.append(np.fft.ifft2(np.fft.ifftshift(Z)))
-        cf_slm = np.exp(1j*np.angle(np.sum(np.array(slm_cfs))))
+        cf_slm = np.exp(1j*np.angle(np.sum(np.array(slm_cfs), axis=0))))
         return cf_slm
 
     def get_phase(self, As, K):
