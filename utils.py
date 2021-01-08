@@ -60,6 +60,7 @@ class GS3D(object):
         return cf_slm
 
     def get_phase(self, As, K):
+        As = np.transpose(As, axes=(2, 0, 1))
         cf_slm = np.exp(1j * np.random.rand(*As.shape[:-1]))
         while K:
             new_Zs = self.__forward(cf_slm, self.Hs, As)
