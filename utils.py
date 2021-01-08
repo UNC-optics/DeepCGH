@@ -43,7 +43,7 @@ class GS3D(object):
         new_Z = []
         z0 = np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(cf_slm)))
         for H, A in zip(Hs, As):
-            if H:
+            if H!=0:
                 new_Z.append(A*np.exp(1j*np.angle(self.__propagate(z0, H))))
             else:
                 new_Z.append(A*np.exp(1j*np.angle(z0)))
@@ -52,7 +52,7 @@ class GS3D(object):
     def __backward(self, Zs, Hs):
         slm_cfs = []
         for Z, H in zip(Zs, Hs[::-1]):
-            if H:
+            if H!=0:
                 slm_cfs.append(np.fft.ifft2(np.fft.ifftshift(self.__propagate(Z, H))))
             else:
                 slm_cfs.append(np.fft.ifft2(np.fft.ifftshift(Z)))
