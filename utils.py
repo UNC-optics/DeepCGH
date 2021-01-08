@@ -65,7 +65,7 @@ class GS3D(object):
         while K:
             new_Zs = self.__forward(cf_slm, self.Hs, As)
             cf_slm = self.__backward(new_Zs, self.Hs)
-            k -= 1
+            K -= 1
         return np.angle(cf_slm)
 
 
