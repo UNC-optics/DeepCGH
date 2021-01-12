@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
+from tqdm import tqdm
 
 
 class GS3D(object):
@@ -62,10 +63,9 @@ class GS3D(object):
     def get_phase(self, As, K):
         As = np.transpose(As, axes=(2, 0, 1))
         cf_slm = np.exp(1j * np.random.rand(*As.shape[1:]))
-        while K:
+        for i in tqdm(range(K)):
             new_Zs = self.__forward(cf_slm, self.Hs, As)
             cf_slm = self.__backward(new_Zs, self.Hs)
-            K -= 1
         return np.angle(cf_slm)
 
 
@@ -80,7 +80,7 @@ def gs2d(img, K):
         slm_cf = 1 * np.exp(1j * slm_phi)
         img_cf = np.fft.fftshift(np.fft.fft2(slm_cf))
         phi = np.angle(img_cf)
-        k -= 1
+        K -= 1
     return slm_phi
 
 def display_results(imgs, phases, recons, t):
@@ -100,9 +100,9 @@ def display_results(imgs, phases, recons, t):
             axs[0, -1].set_title('SLM Phase')
             for i in range(img.shape[-1]):
                 axs[0, i].imshow(img[:, :, i], cmap='gray')
-                axs[0, i].set_title('Target')
+                axs[0, i].set_title('Target @ Z{}'.format(str(i)))
                 axs[1, i].imshow(recon[:, :, i], cmap='gray')
-                axs[0, i].set_title('Simulation')
+                axs[1, i].set_title('Reconstructed')
         fig.suptitle('Inference time was {:.2f}ms'.format(t*1000), fontsize=16)
 
 def get_propagate(data, model):

@@ -365,7 +365,7 @@ class DeepCGH_Datasets(object):
                 os.makedirs(folder)
             
             self.__generate()
-        return [self.absolute_file_path.replace('Split', 'Train'), self.absolute_file_path.replace('Split', 'Test')]
+        self.dataset_paths = [self.absolute_file_path.replace('Split', 'Train'), self.absolute_file_path.replace('Split', 'Test')]
         
      
 
@@ -401,6 +401,12 @@ class DeepCGH(object):
         self.input_queue = Queue(maxsize=4)
         self.output_queue = Queue(maxsize=4)
         self.__check_avalability()
+        self.lr = model_params['lr']
+        self.batch_size = model_params['batch_size']
+        self.epochs = model_params['epochs']
+        self.token = model_params['token']
+        self.shuffle = model_params['shuffle']
+        self.max_steps = model_params['max_steps']
         
         
     def __start_thread(self):
@@ -435,15 +441,26 @@ class DeepCGH(object):
             os.makedirs(self.absolute_file_path)
     
         
-    def train(self, data_path, lr, batch_size = 64, epochs = 100, token = '_retrained', shuffle = 100, max_steps = 5000):
-        self.lr = lr
-        self.token = token
+    def train(self, deepcgh_dataset, lr = None, batch_size = None, epochs = None, token = None, shuffle = None, max_steps = None):
+        # Using default params or new ones?
+        if lr is None:
+            lr = self.lr
+        if batch_size is None:
+            batch_size = self.batch_size
+        if epochs is None:
+            epochs = self.epochs
+        if token is None:
+            token = self.token
+        if shuffle is None:
+            shuffle = self.shuffle
+        if max_steps is None:
+            max_steps = self.max_steps
         
         # deifne Estimator
         model_fn = self.__get_model_fn()
         
         # Data
-        train, validation = self.load_data(data_path, batch_size, epochs, shuffle)
+        train, validation = self.load_data(deepcgh_dataset.dataset_paths, batch_size, epochs, shuffle)
         
         self.__make_folders()
             
