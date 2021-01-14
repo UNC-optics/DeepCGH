@@ -5,6 +5,8 @@
 DeepCGH is an *unsupervised*, *non-iterative* algorithm for computer generated holography. DeepCGH relies on convolutional neural networks to perform *image plane* holography in real-time.
 For more details regarding the structure and algorithm refer to the [associated manuscript](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-28-18-26636) [1]. Please also see our copyright and permission notice in `copyright.pdf`.
 
+For a hands on tutorial you can also see the [`DeepCGH_tutorial.ipynb`](https://colab.research.google.com/drive/1s9zPDb6TArwB4FSUBiUBIuVr9SdtrXnM?usp=sharing) available both on google colab and as a Jupyter Notebook (`tutorial.ipynb`).
+
 ## Installation Guide and Dependencies:
 Here we provide a Python and Tensorflow implementation of DeepCGH. The current version of this software does not require explciit installation. Dependencies include:
 ```
@@ -82,6 +84,7 @@ model = {
         'batch_size' : 4,
         'epochs' : 1,
         'token' : '',
+        'shuffle' : 4,
         'max_steps' : 100
         }
 ```
@@ -97,18 +100,19 @@ Accordingly, the parameters of the model are described bellow:
 9. `'lr'` : the learning rate for training the model
 10. `'batch_size'` : batch_size for training of the model
 11. `'epochs'` : number of epochs to train the model for
-12. `'token'` : customixed token text to be used for the checkpoints of this model
-13. `'max_steps'` : maximum number of training steps.
+12. `'token'` : customixed token text to be used in the saved model file name
+13. `shuffle` : the number of samples to be shuffled before being fed to the model (please refer to Tensorflow Data API for more details)
+14. `'max_steps'` : maximum number of training steps.
 
 Now that the parameters are set uou can create an instance of the `DeepCGH_Datasets` module. This module will create the training dataset. For this purpose first import the module:
 ```
-from deepcgh_new import DeepCGH_Datasets
+from deepcgh import DeepCGH_Datasets
 ```
 Next you will feed the `data` dictionary to the module and instanciate a dataset:
 ```
 dset = DeepCGH_Datasets(data)
 ```
-If a dataset with the characteristics that you specified already exists, that will be printed in the console. Calling the `getDataset` method will return the path to the dataset. If the dataset already exists a new dataset won't be generated but if the dataset doesn't exist (in the specified path) it'll be generated. A progress bar will display the progress of making the dataset.
+If a dataset with the characteristics that you specified already exists, that will be printed in the console. Calling the `getDataset` method will generate the data and update the path to the dataset within the DeepCGH_Dataset object. If the dataset already exists a new dataset won't be generated but if the dataset doesn't exist (in the specified path) it'll be generated. A progress bar will display the progress of making the dataset.
 
 Next, a `DeepCGH` module is instantiated according to the specified parameters:
 ```
