@@ -146,3 +146,7 @@ def get_propagate(data, model):
 
         return tf.concat(values=frames, axis=-1)
     return propagate
+
+def accuracy(y_true, y_pred):
+    denom = tf.sqrt(tf.reduce_sum(tf.pow(y_pred, 2), axis=[1, 2, 3])*tf.reduce_sum(tf.pow(y_true, 2), axis=[1, 2, 3]))
+    return tf.reduce_mean((tf.reduce_sum(y_pred * y_true, axis=[1, 2, 3])+1)/(denom+1), axis = 0)
