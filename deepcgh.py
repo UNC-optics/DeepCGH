@@ -524,7 +524,7 @@ class DeepCGH(object):
         for i in self.estimator.predict(input_fn=self.__queued_predict_input_fn,
                                         yield_single_examples=False):
             self.output_queue.put(i)
-            
+        
     
     def get_hologram(self, inputs):
         '''
@@ -657,7 +657,6 @@ class DeepCGH(object):
             img = tf.signal.ifftshift(img, axes = [1, 2])
             fft = tf.signal.ifft2d(img)
             phase = tf.expand_dims(tf.math.angle(fft), axis=-1)
-            
             return phase
         
         
@@ -725,4 +724,5 @@ class DeepCGH(object):
                                                       loss = acc,
                                                       train_op = train_op)
         return model_fn
+
 
