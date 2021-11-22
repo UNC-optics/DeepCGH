@@ -47,7 +47,8 @@ model = {
         'epochs' : 10,
         'token' : '64',
         'shuffle' : 8,
-        'max_steps' : 4000
+        'max_steps' : 4000,
+        'fourier_lens_f' : 0.2
         }
 
 
@@ -77,7 +78,6 @@ while(True):
 
 
 #%% This is a sample test. You can generate a random image and get the results
-propagate = get_propagate(data, model)
 image = dset.get_randSample()[np.newaxis,...]
 # making inference is as simple as calling the get_hologram method
 phase = dcgh.get_hologram(image)

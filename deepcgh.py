@@ -407,6 +407,7 @@ class DeepCGH(object):
         self.token = model_params['token']
         self.shuffle = model_params['shuffle']
         self.max_steps = model_params['max_steps']
+        self.f = model_params['fourier_lens_f']
         
         
     def __start_thread(self):
@@ -597,13 +598,15 @@ class DeepCGH(object):
             return x1
         
         
-        def __get_H(zs, shape, lambda_, ps):
+        def __get_fH(zs, shape, lambda_, ps, f):
+            psx = np.abs(f*lambda_/(shape[0]*ps))
+            psy = np.abs(f*lambda_/(shape[1]*ps))
             Hs = []
             for z in zs:
                 x, y = np.meshgrid(np.linspace(-shape[1]//2+1, shape[1]//2, shape[1]),
                                    np.linspace(-shape[0]//2+1, shape[0]//2, shape[0]))
-                fx = x/ps/shape[0]
-                fy = y/ps/shape[1]
+                fx = x/psx/shape[1]
+                fy = y/psy/shape[0]
                 exp = np.exp(-1j * np.pi * lambda_ * z * (fx**2 + fy**2))
                 Hs.append(exp.astype(np.complex64))
             return Hs
@@ -674,13 +677,13 @@ class DeepCGH(object):
             return tf.math.exp(i_phi_slm)
         
         
-        Hs = __get_H(self.zs, self.shape, self.wavelength, self.ps)
+        self.Hs = __get_fH(self.zs, self.shape, self.wavelength, self.ps, self.f)
         
         
         def __big_loss(y_true, phi_slm):
             frames = []
             cf_slm = __phi_slm(phi_slm)
-            for H, z in zip(Hs, self.zs):
+            for H in self.Hs:
                 frames.append(__prop__(cf_slm, tf.keras.backend.constant(H, dtype = tf.complex64)))
             
             frames.insert(self.shape[-1] // 2, __prop__(cf_slm, center = True))
