@@ -407,9 +407,27 @@ class DeepCGH(object):
         self.token = model_params['token']
         self.shuffle = model_params['shuffle']
         self.max_steps = model_params['max_steps']
-        self.f = model_params['fourier_lens_f']
+        self.f = model_params['focal_point']
+        try:
+            self.Hs = model_params['HMatrix']
+        except:
+            self.Hs = self.__get_H(self.zs, self.shape, self.wavelength, self.ps, self.f)
         
-        
+    
+    def __get_H(self, zs, shape, lambda_, ps, f):
+        psx = np.abs(f*lambda_/(shape[1]*ps))
+        psy = np.abs(f*lambda_/(shape[0]*ps))
+        Hs = []
+        for z in zs:
+            x, y = np.meshgrid(np.linspace(-shape[1]//2+1, shape[1]//2, shape[1]),
+                               np.linspace(-shape[0]//2+1, shape[0]//2, shape[0]))
+            fx = x/psx/shape[1]
+            fy = y/psy/shape[0]
+            exp = np.exp(-1j * np.pi * lambda_ * z * (fx**2 + fy**2))
+            Hs.append(exp.astype(np.complex64))
+        return Hs
+    
+    
     def __start_thread(self):
         self.prediction_thread = Thread(target=self.__predict_from_queue, daemon=True)
         self.prediction_thread.start()
@@ -598,20 +616,6 @@ class DeepCGH(object):
             return x1
         
         
-        def __get_fH(zs, shape, lambda_, ps, f):
-            psx = np.abs(f*lambda_/(shape[0]*ps))
-            psy = np.abs(f*lambda_/(shape[1]*ps))
-            Hs = []
-            for z in zs:
-                x, y = np.meshgrid(np.linspace(-shape[1]//2+1, shape[1]//2, shape[1]),
-                                   np.linspace(-shape[0]//2+1, shape[0]//2, shape[0]))
-                fx = x/psx/shape[1]
-                fy = y/psy/shape[0]
-                exp = np.exp(-1j * np.pi * lambda_ * z * (fx**2 + fy**2))
-                Hs.append(exp.astype(np.complex64))
-            return Hs
-        
-        
         def __unet():
             n_kernels = self.n_kernels
             inp = Input(shape=self.shape, name='target')
@@ -675,9 +679,6 @@ class DeepCGH(object):
         def __phi_slm(phi_slm):
             i_phi_slm = tf.dtypes.complex(np.float32(0.), tf.squeeze(phi_slm, axis=-1))
             return tf.math.exp(i_phi_slm)
-        
-        
-        self.Hs = __get_fH(self.zs, self.shape, self.wavelength, self.ps, self.f)
         
         
         def __big_loss(y_true, phi_slm):

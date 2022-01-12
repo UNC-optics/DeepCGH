@@ -87,7 +87,7 @@ def display_results(imgs, phases, recons, t):
     assert imgs.ndim == 4 and phases.ndim == 4 and recons.ndim == 4, "Dimensions don't match"
     for img, phase, recon in zip(imgs, phases, recons):
         if img.shape[-1] == 1:
-            fig, axs = plt.subplots(1, 3, figsize=(9, 3), sharey=True, sharex=True)
+            fig, axs = plt.subplots(1, 3, figsize=(9, 5), sharey=True, sharex=True)
             axs[0].imshow(np.squeeze(img), cmap='gray')
             axs[0].set_title('Target')
             axs[1].imshow(np.squeeze(phase), cmap='gray')
@@ -95,7 +95,7 @@ def display_results(imgs, phases, recons, t):
             axs[2].imshow(np.squeeze(recon), cmap='gray')
             axs[2].set_title('Simulation')
         else:
-            fig, axs = plt.subplots(2, img.shape[-1] + 1, figsize = (3 * (img.shape[-1] + 1), 6), sharey = True, sharex = True)
+            fig, axs = plt.subplots(2, img.shape[-1] + 1, figsize = (15 * (img.shape[-1] + 1), 30), sharey = True, sharex = True)
             axs[0, -1].imshow(np.squeeze(phase))
             axs[0, -1].set_title('SLM Phase')
             for i in range(img.shape[-1]):
@@ -104,13 +104,15 @@ def display_results(imgs, phases, recons, t):
                 axs[1, i].imshow(recon[:, :, i], cmap='gray')
                 axs[1, i].set_title('Reconstructed')
         fig.suptitle('Inference time was {:.2f}ms'.format(t*1000), fontsize=16)
+        fig.savefig('deepcghresults.png')
 
-def get_propagate(shape, wavelength, pixel_size, Zs):
+def get_propagate(data, model):
+    shape = data['shape']
     zs = [-0.005*x for x in np.arange(1, (shape[-1]-1)//2+1)][::-1] + [0.005*x for x in np.arange(1, (shape[-1]-1)//2+1)]
     lambda_ = model['wavelength']
     ps = model['pixel_size']
 
-    def __get_fH(zs, shape, lambda_, ps):
+    def __get_H(zs, shape, lambda_, ps):
         Hs = []
         for z in zs:
             x, y = np.meshgrid(np.linspace(-shape[1] // 2 + 1, shape[1] // 2, shape[1]),
@@ -132,13 +134,13 @@ def get_propagate(shape, wavelength, pixel_size, Zs):
     def __phi_slm(phi_slm):
         i_phi_slm = tf.dtypes.complex(np.float32(0.), tf.squeeze(phi_slm, axis=-1))
         return tf.math.exp(i_phi_slm)
-    
-    Hs = __get_fH(zs, shape, lambda_, ps)
+    Hs = model['HMatrix']
+    # Hs = __get_H(zs, shape, lambda_, ps)
 
     def propagate(phi_slm):
         frames = []
         cf_slm = __phi_slm(phi_slm)
-        for H in Hs:
+        for H, z in zip(Hs, zs):
             frames.append(__prop__(cf_slm, tf.keras.backend.constant(H, dtype=tf.complex64)))
 
         frames.insert(shape[-1] // 2, __prop__(cf_slm, center=True))
