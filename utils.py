@@ -112,16 +112,16 @@ def get_propagate(data, model):
     lambda_ = model['wavelength']
     ps = model['pixel_size']
 
-    def __get_H(zs, shape, lambda_, ps):
-        Hs = []
-        for z in zs:
-            x, y = np.meshgrid(np.linspace(-shape[1] // 2 + 1, shape[1] // 2, shape[1]),
-                               np.linspace(-shape[0] // 2 + 1, shape[0] // 2, shape[0]))
-            fx = x / ps / shape[0]
-            fy = y / ps / shape[1]
-            exp = np.exp(-1j * np.pi * lambda_ * z * (fx ** 2 + fy ** 2))
-            Hs.append(exp.astype(np.complex64))
-        return Hs
+    # def __get_H(zs, shape, lambda_, ps):
+    #     Hs = []
+    #     for z in zs:
+    #         x, y = np.meshgrid(np.linspace(-shape[1] // 2 + 1, shape[1] // 2, shape[1]),
+    #                            np.linspace(-shape[0] // 2 + 1, shape[0] // 2, shape[0]))
+    #         fx = x / ps / shape[0]
+    #         fy = y / ps / shape[1]
+    #         exp = np.exp(-1j * np.pi * lambda_ * z * (fx ** 2 + fy ** 2))
+    #         Hs.append(exp.astype(np.complex64))
+    #     return Hs
 
     def __prop__(cf_slm, H=None, center=False):
         if not center:

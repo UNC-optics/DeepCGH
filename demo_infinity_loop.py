@@ -23,11 +23,11 @@ data = {
         'object_type' : 'Disk',
         'object_size' : 10,
         'object_count' : [27, 48],
-        'intensity' : [0.2, 1],
+        'intensity' : [0.1, 1],
         'normalize' : True,
         'centralized' : False,
-        'N' : 5000,
-        'train_ratio' : 4000/5000,
+        'N' : 20,
+        'train_ratio' : 10/20,
         'compression' : 'GZIP',
         'name' : 'target',
         }
@@ -35,20 +35,23 @@ data = {
 
 model = {
         'path' : 'DeepCGH_Models/Disks',
-        'int_factor':32,
-        'n_kernels':[ 64, 128, 256],
-        'plane_distance':0.005,
+        'int_factor':16,
+        'n_kernels':[64, 128, 256],
+        'plane_distance':19.3/1000,
         'focal_point':0.2,
-        'wavelength':1e-6,
-        'pixel_size':0.000015,
+        # 'wavelength':1.e-6,
+        # 'pixel_size':0.000015,
+        'wavelength':1.04e-6,
+        'pixel_size': 9.2e-6,
         'input_name':'target',
         'output_name':'phi_slm',
         'lr' : 1e-4,
-        'batch_size' : 4,
-        'epochs' : 10,
-        'token' : '64',
-        'shuffle' : 8,
-        'max_steps' : 4000
+        'batch_size' : 16,
+        'epochs' : 100,
+        'token' : 'final',
+        'shuffle' : 16,
+        'max_steps' : 4000,
+        # 'HMatrix' : hstack
         }
 
 
@@ -63,25 +66,31 @@ dcgh = DeepCGH(data, model)
 if retrain:
     dcgh.train(dset)
     
-#%%
-while(True):
-    files = glob(frame_path)
-    if len(files) > 0:
-        data = scio.loadmat(files[0])['data']
-        if data.sum() == 0:
-            break
-        if coordinates:
-            data = dset.coord2image(data)
-    phase = np.squeeze(dcgh.get_hologram(data))
-
-    # you can add your code here
+#%% Example inifinity loop
+# while(True):
+#     files = glob(frame_path)
+#     if len(files) > 0:
+#         data = scio.loadmat(files[0])['data']
+#         if data.sum() == 0:
+#             break
+#         if coordinates:
+#             data = dset.coord2image(data)
+#     phase = np.squeeze(dcgh.get_hologram(data))
 
 
 #%% This is a sample test. You can generate a random image and get the results
+model['HMatrix'] = dcgh.Hs # For plotting we use the exact same H matrices that DeepCGH used
+
+# Get a function that propagates SLM phase to different planes according to your setup's characteristics
 propagate = get_propagate(data, model)
+
+# Generate a random sample
 image = dset.get_randSample()[np.newaxis,...]
-# making inference is as simple as calling the get_hologram method
+# Get the phase for your target using a trained and loaded DeepCGH
 phase = dcgh.get_hologram(image)
-propagate = get_propagate(data, model)
+
+# Simulate what the solution would look like
 reconstruction = propagate(phase)
+
+# Show the results
 display_results(image, phase, reconstruction, 1)
