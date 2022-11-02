@@ -6,11 +6,13 @@ Created on Mon Jul 13 15:18:10 2020
 @author: hoss
 """
 import tensorflow as tf
-from deepcgh import DeepCGH_Datasets, DeepCGH
+from deepcgh import DeepCGH_Datasets, DeepDCGH
 import numpy as np
 from glob import glob
 import scipy.io as scio
 from utils import GS3D, display_results, get_propagate
+import matplotlib.pyplot as plt
+
 # Define params
 retrain = True
 frame_path = 'DeepCGH_Frames/*.mat'
@@ -34,9 +36,10 @@ data = {
 
 model = {
         'path' : 'DeepCGH_Models/Disks',
+        'num_frames':5,
         'int_factor':16,
         'n_kernels':[64, 128, 256],
-        'plane_distance':0.005,
+        'plane_distance':0.05,
         'focal_point':0.2,
         'wavelength':1.04e-6,
         'pixel_size': 9.2e-6,
@@ -45,7 +48,7 @@ model = {
         'lr' : 1e-4,
         'batch_size' : 16,
         'epochs' : 100,
-        'token' : '',
+        'token' : 'DCGH',
         'shuffle' : 16,
         'max_steps' : 4000,
         # 'HMatrix' : hstack
@@ -58,22 +61,10 @@ dset = DeepCGH_Datasets(data)
 dset.getDataset()
 
 # Estimator
-dcgh = DeepCGH(data, model)
+dcgh = DeepDCGH(data, model)
 
 if retrain:
     dcgh.train(dset)
-    
-#%% Example inifinity loop
-# while(True):
-#     files = glob(frame_path)
-#     if len(files) > 0:
-#         data = scio.loadmat(files[0])['data']
-#         if data.sum() == 0:
-#             break
-#         if coordinates:
-#             data = dset.coord2image(data)
-#     phase = np.squeeze(dcgh.get_hologram(data))
-
 
 #%% This is a sample test. You can generate a random image and get the results
 model['HMatrix'] = dcgh.Hs # For plotting we use the exact same H matrices that DeepCGH used
@@ -87,7 +78,21 @@ image = dset.get_randSample()[np.newaxis,...]
 phase = dcgh.get_hologram(image)
 
 # Simulate what the solution would look like
-reconstruction = propagate(phase)
+reconstruction = propagate(phase).numpy()
 
-# Show the results
-display_results(image, phase, reconstruction, 1)
+#%% display simulation results
+plt.figure(figsize=(30, 20))
+Z = [-50, 0, 50]
+for i in range(reconstruction.shape[-1]):
+    plt.subplot(231+i)
+    plt.imshow(reconstruction[0, :,:, i], cmap='gray')
+    plt.axis('off')
+    plt.title('Simulation @ {}mm'.format(Z[i]))
+    plt.subplot(234+i)
+    plt.imshow(image[0, :,:, i], cmap='gray')
+    plt.axis('off')
+    plt.title('Target @ {}mm'.format(Z[i]))
+plt.savefig('example.jpg')
+plt.show()
+
+#%%

@@ -370,6 +370,366 @@ class DeepCGH_Datasets(object):
      
 
 #%%
+class DeepDCGH(object):
+    '''
+    Class for the DeepCGH algorithm.
+    Inputs:
+        batch_size   int, determines the batch size of the prediction
+        num_iter   int, determines the number of iterations of the GS algorithm
+        input_shape   tuple of shape (height, width)
+    Returns:
+        Instance of the object
+    '''
+    def __init__(self,
+                 data_params,
+                 model_params):
+        
+        self.num_frames = model_params['num_frames']
+        self.path = model_params['path']
+        self.shape = data_params['shape']
+        self.plane_distance = model_params['plane_distance']
+        self.n_kernels = model_params['n_kernels']
+        self.IF = model_params['int_factor']
+        self.wavelength = model_params['wavelength']
+        self.ps = model_params['pixel_size']
+        self.object_type = data_params['object_type']
+        self.centralized = data_params['centralized']
+        self.input_name = model_params['input_name']
+        self.output_name = model_params['output_name']
+        self.token = model_params['token']
+        self.zs = [-1*self.plane_distance*x for x in np.arange(1, (self.shape[-1]-1)//2+1)][::-1] + [self.plane_distance*x for x in np.arange(1, (self.shape[-1]-1)//2+1)]
+        self.input_queue = Queue(maxsize=4)
+        self.output_queue = Queue(maxsize=4)
+        self.__check_avalability()
+        self.lr = model_params['lr']
+        self.batch_size = model_params['batch_size']
+        self.epochs = model_params['epochs']
+        self.token = model_params['token']
+        self.shuffle = model_params['shuffle']
+        self.max_steps = model_params['max_steps']
+        self.f = model_params['focal_point']
+        try:
+            self.Hs = model_params['HMatrix']
+        except:
+            self.Hs = self.__get_H(self.zs, self.shape, self.wavelength, self.ps, self.f)
+        
+    
+    def __get_H(self, zs, shape, lambda_, ps, f):
+        psx = np.abs(f*lambda_/(shape[1]*ps))
+        psy = np.abs(f*lambda_/(shape[0]*ps))
+        Hs = []
+        for z in zs:
+            x, y = np.meshgrid(np.linspace(-shape[1]//2+1, shape[1]//2, shape[1]),
+                               np.linspace(-shape[0]//2+1, shape[0]//2, shape[0]))
+            fx = x/psx/shape[1]
+            fy = y/psy/shape[0]
+            exp = np.exp(-1j * np.pi * lambda_ * z * (fx**2 + fy**2))
+            Hs.append(np.fft.fftshift(exp.astype(np.complex64))[np.newaxis, np.newaxis, ...])
+        return Hs
+    
+    
+    def __start_thread(self):
+        self.prediction_thread = Thread(target=self.__predict_from_queue, daemon=True)
+        self.prediction_thread.start()
+        
+        
+    def __check_avalability(self):
+        print('Looking for trained models in:')
+        print(os.getcwd(), '\n')
+        
+        self.filename = 'Model_{}_SHP{}_IF{}_Dst{}_WL{}_PS{}_CNT{}_{}'.format(self.object_type,
+                                                                              self.shape, 
+                                                                              self.IF,
+                                                                              self.plane_distance,
+                                                                              self.wavelength,
+                                                                              self.ps,
+                                                                              self.centralized,
+                                                                              self.token)
+        
+        self.absolute_file_path = os.path.join(os.getcwd(), self.path, self.filename)
+        
+        if not os.path.exists(self.absolute_file_path):
+            print('No trained models found. Please call the `train` method. \nModel checkpoints will be stored in: \n {}'.format(self.absolute_file_path))
+            
+        else:
+            print('Model already exists.')
+    
+    
+    def __make_folders(self):
+        if not os.path.exists(self.absolute_file_path):
+            os.makedirs(self.absolute_file_path)
+    
+        
+    def train(self, deepcgh_dataset, lr = None, batch_size = None, epochs = None, token = None, shuffle = None, max_steps = None):
+        # Using default params or new ones?
+        if lr is None:
+            lr = self.lr
+        if batch_size is None:
+            batch_size = self.batch_size
+        if epochs is None:
+            epochs = self.epochs
+        if token is None:
+            token = self.token
+        if shuffle is None:
+            shuffle = self.shuffle
+        if max_steps is None:
+            max_steps = self.max_steps
+        
+        # deifne Estimator
+        model_fn = self.__get_model_fn()
+        
+        # Data
+        train, validation = self.load_data(deepcgh_dataset.dataset_paths, batch_size, epochs, shuffle)
+        
+        self.__make_folders()
+            
+        self.estimator = tf.estimator.Estimator(model_fn,
+                                                model_dir=self.absolute_file_path)
+        
+        # 
+        train_spec = tf.estimator.TrainSpec(input_fn=train, max_steps=max_steps)
+        eval_spec = tf.estimator.EvalSpec(input_fn=validation)
+        
+        tf.estimator.train_and_evaluate(self.estimator, train_spec, eval_spec)
+
+        self.__start_thread()
+            
+    
+    def load_data(self, path, batch_size, epochs, shuffle):
+        if isinstance(path, list) and ('tfrecords' in path[0]) and ('tfrecords' in path[1]):
+            image_feature_description = {'sample': tf.io.FixedLenFeature([], tf.string)}
+            
+            def __parse_image_function(example_proto):
+                parsed_features = tf.io.parse_single_example(example_proto, image_feature_description)
+                img = tf.cast(tf.reshape(tf.io.decode_raw(parsed_features['sample'], tf.float64), self.shape), tf.float32)
+                return {'target':img}, {'recon':img}
+            
+            def val_func():
+                validation = tf.data.TFRecordDataset(path[1],
+                                      compression_type='GZIP',
+                                      buffer_size=None,
+                                      num_parallel_reads=2).map(__parse_image_function).batch(batch_size)#.prefetch(tf.data.experimental.AUTOTUNE)
+                
+                return validation
+            
+            def train_func():
+                train = tf.data.TFRecordDataset(path[0],
+                                      compression_type='GZIP',
+                                      buffer_size=None,
+                                      num_parallel_reads=2).map(__parse_image_function).repeat(epochs).shuffle(shuffle).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+                return train
+            #.repeat(epochs)
+            return train_func, val_func
+        else:
+            raise('You got a problem in your file name bruh')
+    
+        
+    def __generate_from_queue(self):
+        '''
+        A generator with infinite loop to fetch one smaple from the queue
+        Returns:
+            one sample!
+        '''
+        while True:
+            yield self.input_queue.get()
+
+
+    def __predict_from_queue(self):
+        '''
+        Once the input queue has something to offer to the estimator, the
+        estimator makes the predictions and the outputs of that prediction are
+        fed into the output queue.
+        '''
+        for i in self.estimator.predict(input_fn=self.__queued_predict_input_fn,
+                                        yield_single_examples=False):
+            self.output_queue.put(i)
+        
+    
+    def get_hologram(self, inputs):
+        '''
+        Return the hologram using the GS algorithm with num_iter iterations.
+        Inputs:
+            inputs   numpy ndarray, the two dimentional target image
+        Returns:
+            hologram as a numpy ndarray 
+        '''
+        features = {}
+        if not isinstance(self.input_name, str):
+            for key, val in zip(self.input_name, inputs):
+                features[key] = val
+        else:
+            features = {self.input_name: inputs}
+        self.input_queue.put(features)
+        predictions = self.output_queue.get()
+        
+        return predictions#[self.output_name]
+
+    def __queued_predict_input_fn(self):
+        '''
+        Input function that returns a tensorflow Dataset from a generator.
+        Returns:
+            a tensorflow dataset
+        '''
+        # Fetch the inputs from the input queue
+        type_dict = {}
+        shape_dict = {}
+        
+        if not isinstance(self.input_name, str):
+            for key in self.input_name:
+                type_dict[key] = tf.float32
+                shape_dict[key] = (None,)+self.shape
+        else:
+            type_dict = {self.input_name: tf.float32}
+            shape_dict = {self.input_name:(None,)+self.shape}
+        
+        dataset = tf.data.Dataset.from_generator(self.__generate_from_queue,
+                                                 output_types=type_dict,
+                                                 output_shapes=shape_dict)
+        return dataset
+    
+    
+    def __get_model_fn(self):
+        
+        def interleave(x):
+            return tf.nn.space_to_depth(input = x,
+                                       block_size = self.IF,
+                                       data_format = 'NHWC')
+        
+        
+        def deinterleave(x):
+            return tf.nn.depth_to_space(input = x,
+                                       block_size = self.IF,
+                                       data_format = 'NHWC')
+        
+        
+        def __cbn(ten, n_kernels, act_func):
+            x1 = Conv2D(n_kernels, (3, 3), activation = act_func, padding='same')(ten)
+            x1 = BatchNormalization()(x1)
+            x1 = Conv2D(n_kernels, (3, 3), activation = act_func, padding='same')(x1)
+            x1 = BatchNormalization()(x1)
+            return x1 
+        
+        
+        def __cc(ten, n_kernels, act_func):
+            x1 = Conv2D(n_kernels, (3, 3), activation = act_func, padding='same')(ten)
+            x1 = Conv2D(n_kernels, (3, 3), activation = act_func, padding='same')(x1)
+            return x1
+        
+        
+        def __unet():
+            n_kernels = self.n_kernels
+            inp = Input(shape=self.shape, name='target')
+            act_func = 'relu'
+            x1_1 = Lambda(interleave, name='Interleave')(inp)
+            # Block 1
+            x1 = __cbn(x1_1, n_kernels[0], act_func)
+            x2 = MaxPooling2D((2, 2), padding='same')(x1)
+            # Block 2
+            x2 = __cbn(x2, n_kernels[1], act_func)
+            encoded = MaxPooling2D((2, 2), padding='same')(x2)
+            # Bottleneck
+            encoded = __cc(encoded, n_kernels[2], act_func)
+            #
+            x3 = UpSampling2D(2)(encoded)
+            x3 = Concatenate()([x3, x2])
+            x3 = __cc(x3, n_kernels[1], act_func)
+            #
+            x4 = UpSampling2D(2)(x3)
+            x4 = Concatenate()([x4, x1])
+            x4 = __cc(x4, n_kernels[0], act_func)
+            #
+            x4 = __cc(x4, n_kernels[1], act_func)
+            x4 = Concatenate()([x4, x1_1])
+            #
+            phi_0_ = Conv2D(self.num_frames * self.IF**2, (3, 3), activation=None, padding='same')(x4)
+            phi_0 = Lambda(deinterleave, name='phi_0')(phi_0_)
+            amp_0_ = Conv2D(self.num_frames * self.IF**2, (3, 3), activation='relu', padding='same')(x4)
+            amp_0 = Lambda(deinterleave, name='amp_0')(amp_0_)
+            
+            modulation = Lambda(__ifft_AmPh, name='modulation')([amp_0, phi_0])
+            
+            return Model(inp, modulation)
+            
+        
+        def __accuracy(y_true, y_pred):
+            denom = tf.sqrt(tf.reduce_sum(tf.square(y_pred), axis=[1, 2, 3])*tf.reduce_sum(tf.square(y_true), axis=[1, 2, 3]))
+            return 1-tf.reduce_mean((tf.reduce_sum(y_pred * y_true, axis=[1, 2, 3])+0.0001)/(denom+0.0001), axis = 0)
+        
+        
+        def __ifft_AmPh(x):
+            '''
+            Input is Amp x[1] and Phase x[0]. Spits out the angle of ifft.
+            '''
+            img = tf.complex(x[0], 0.) * tf.math.exp(tf.complex(0., x[1]))
+            img_t = tf.transpose(img, perm = [0, 3, 1, 2])
+            img_sh = tf.signal.ifftshift(img_t, axes = [2, 3])
+            slm_ = tf.signal.ifft2d(img_sh)
+            modulation = tf.math.angle(slm_)
+            # modulation = tf.transpose(tf.math.angle(slm_), perm = [0, 2, 3, 1])
+            return modulation
+        
+        
+        def __prop__(cf_slm, H = None, center = False):
+            if not center:
+                cf_slm *= H
+            cf = tf.signal.ifftshift(tf.signal.fft2d(tf.signal.fftshift(cf_slm, axes = [2, 3])), axes = [2, 3])
+            return tf.cast(tf.square(tf.abs(cf))[..., tf.newaxis], dtype=tf.dtypes.float32)
+        
+        
+        def __big_loss(y_true, modulation):
+            frames = []
+            cf_modulation = tf.math.exp(tf.complex(0., modulation))
+            for H in self.Hs:
+                frames.append(__prop__(cf_modulation, tf.keras.backend.constant(H, dtype = tf.complex64)))
+            
+            frames.insert(self.shape[-1] // 2, __prop__(cf_modulation, center = True))
+            
+            y_pred_ = tf.concat(values = frames, axis = -1)
+            
+            # time averaging along axis 1
+            y_pred = tf.math.reduce_mean(y_pred_, axis = 1, keepdims=False)
+            
+            return __accuracy(y_true, y_pred)
+            
+        
+        def model_fn(features, labels, mode):
+            unet = __unet()
+            
+            training = (mode == tf.estimator.ModeKeys.TRAIN)
+            
+            phi_slm = unet(features['target'], training = training)
+        
+            if mode == tf.estimator.ModeKeys.PREDICT:
+                return tf.estimator.EstimatorSpec(mode, predictions = phi_slm)
+            
+            else:
+                acc = __big_loss(labels['recon'], phi_slm)
+                
+                if mode == tf.estimator.ModeKeys.EVAL:
+                    return tf.estimator.EstimatorSpec(mode, loss = acc)
+                
+                elif mode == tf.estimator.ModeKeys.TRAIN:
+                    train_op = None
+                    
+                    opt = tf.keras.optimizers.Adam(learning_rate=self.lr)
+                    
+                    opt.iterations = tf.compat.v1.train.get_or_create_global_step()
+                    
+                    update_ops = unet.get_updates_for(None) + unet.get_updates_for(features['target'])
+                    
+                    minimize_op = opt.get_updates(acc , unet.trainable_variables)[0]
+                    
+                    train_op = tf.group(minimize_op, *update_ops)
+                    
+                    return tf.estimator.EstimatorSpec(mode = mode,
+                                                      predictions = {self.output_name: phi_slm},
+                                                      loss = acc,
+                                                      train_op = train_op)
+        return model_fn
+        
+     
+
+#%%
 class DeepCGH(object):
     '''
     Class for the DeepCGH algorithm.
