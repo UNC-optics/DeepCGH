@@ -5,7 +5,8 @@
 DeepCGH is an *unsupervised*, *non-iterative* algorithm for computer generated holography. DeepCGH relies on convolutional neural networks to perform *image plane* holography in real-time.
 For more details regarding the structure and algorithm refer to the [associated manuscript](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-28-18-26636) [1]. Please also see our copyright and permission notice in `copyright.pdf`.
 
-UPDATE: New updates coming soon. The code will become more modular and new functionalities will be integrated. The goal is to make DeepCGH easier to use for developers and more understandable for users. Stay tuned.
+UPDATE: DeepCGH now includes multi-frame (aka time-averaged, Dynamic CGH) optimization. A new parameter, `num_frames` determines how many frames with be simultaneously co-optimized. This new module is called DeepDCGH. Please refer to `demo_deepdcgh.py` for example usage and results.
+More information about the technique is available in the [associated manuscript](https://www.spiedigitallibrary.org/conference-proceedings-of-spie/PC12014/PC1201406/Optimization-of-time-multiplexed-computer-generated-holograms-with-surrogate-gradients/10.1117/12.2607781.full).
 
 
 For a hands on tutorial you can also see the [`DeepCGH_tutorial.ipynb`](https://colab.research.google.com/drive/1s9zPDb6TArwB4FSUBiUBIuVr9SdtrXnM?usp=sharing) available both on google colab and as a Jupyter Notebook (`tutorial.ipynb`).
