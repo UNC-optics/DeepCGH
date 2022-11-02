@@ -13,6 +13,8 @@ For a hands on tutorial you can also see the [`DeepCGH_tutorial.ipynb`](https://
 ## UPDATES:
 -- DeepCGH now includes multi-frame (aka time-averaged, Dynamic CGH) optimization. A new parameter, `num_frames` determines how many frames with be simultaneously co-optimized. This new module is called DeepDCGH. Please refer to `demo_deepdcgh.py` for example usage and results.
 More information about the technique is available in the [associated manuscript](https://www.spiedigitallibrary.org/conference-proceedings-of-spie/PC12014/PC1201406/Optimization-of-time-multiplexed-computer-generated-holograms-with-surrogate-gradients/10.1117/12.2607781.full).
+
+
 -- The `skimage` bug is fixed. Skimage changed circle to disk and that was a problem for many.
 
 ## Installation Guide and Dependencies:
