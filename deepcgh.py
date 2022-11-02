@@ -13,7 +13,7 @@ import tensorflow as tf
 from queue import Queue
 from threading import Thread
 import warnings
-from skimage.draw import circle, line_aa
+from skimage.draw import disk, line_aa
 import numpy as np
 from tqdm import tqdm
 import h5py as h5
@@ -102,10 +102,10 @@ class DeepCGH_Datasets(object):
             the indices for a circle twice the size of the circle. This is will determine where we should not create circles
         """
         img = np.zeros(shape, dtype=np.float32)
-        rr, cc = circle(location[0], location[1], radius, shape=img.shape)
+        rr, cc = disk((location[0], location[1]), radius, shape=img.shape)
         img[rr, cc] = 1
         # get the indices that are forbidden and return it
-        rr2, cc2 = circle(location[0], location[1], 2*radius, shape=img.shape)
+        rr2, cc2 = disk((location[0], location[1]), 2*radius, shape=img.shape)
         return img, rr2, cc2
 
 
