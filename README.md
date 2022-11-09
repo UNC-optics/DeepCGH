@@ -5,10 +5,17 @@
 DeepCGH is an *unsupervised*, *non-iterative* algorithm for computer generated holography. DeepCGH relies on convolutional neural networks to perform *image plane* holography in real-time.
 For more details regarding the structure and algorithm refer to the [associated manuscript](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-28-18-26636) [1]. Please also see our copyright and permission notice in `copyright.pdf`.
 
-UPDATE: New updates coming soon. The code will become more modular and new functionalities will be integrated. The goal is to make DeepCGH easier to use for developers and more understandable for users. Stay tuned.
-
 
 For a hands on tutorial you can also see the [`DeepCGH_tutorial.ipynb`](https://colab.research.google.com/drive/1s9zPDb6TArwB4FSUBiUBIuVr9SdtrXnM?usp=sharing) available both on google colab and as a Jupyter Notebook (`tutorial.ipynb`).
+
+
+
+## UPDATES:
+-- DeepCGH now includes multi-frame (aka time-averaged, Dynamic CGH) optimization. A new parameter, `num_frames` determines how many frames with be simultaneously co-optimized. This new module is called DeepDCGH. Please refer to `demo_deepdcgh.py` for example usage and results.
+More information about the technique is available in the [associated manuscript](https://www.spiedigitallibrary.org/conference-proceedings-of-spie/PC12014/PC1201406/Optimization-of-time-multiplexed-computer-generated-holograms-with-surrogate-gradients/10.1117/12.2607781.full).
+
+
+-- The `skimage` bug is fixed. Skimage changed circle to disk and that was a problem for many.
 
 ## Installation Guide and Dependencies:
 Here we provide a Python and Tensorflow implementation of DeepCGH. The current version of this software does not require explciit installation. Dependencies include:
@@ -17,7 +24,7 @@ python 3.x
 tensorflow-gpu >= 2.0.0
 h5py
 scipy
-skimage
+skimage == 0.19.2
 tqdm
 ```
 If you have Python 3.x (preferrably > 3.7), you can easily install package requirements by executing the following command in **Ubuntu** terminal or Anaconda Prompt on **Windows**:
