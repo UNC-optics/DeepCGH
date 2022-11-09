@@ -385,6 +385,7 @@ class DeepDCGH(object):
                  model_params):
         
         self.num_frames = model_params['num_frames']
+        self.quantization = 2**model_params['quantization']
         self.path = model_params['path']
         self.shape = data_params['shape']
         self.plane_distance = model_params['plane_distance']
@@ -590,6 +591,18 @@ class DeepDCGH(object):
     
     def __get_model_fn(self):
         
+        
+        @tf.custom_gradient
+        def quantize(x):
+            quantized = tf.math.round((x + np.pi) * (self.quantization-1) / (2*np.pi))
+            quantized /= (self.quantization-1)
+            quantized *= 2*np.pi
+            quantized -= np.pi
+            def grad(dy):
+                return dy
+            return quantized, grad
+        
+        
         def interleave(x):
             return tf.nn.space_to_depth(input = x,
                                        block_size = self.IF,
@@ -665,8 +678,7 @@ class DeepDCGH(object):
             img_sh = tf.signal.ifftshift(img_t, axes = [2, 3])
             slm_ = tf.signal.ifft2d(img_sh)
             modulation = tf.math.angle(slm_)
-            # modulation = tf.transpose(tf.math.angle(slm_), perm = [0, 2, 3, 1])
-            return modulation
+            return quantize(modulation)
         
         
         def __prop__(cf_slm, H = None, center = False):
