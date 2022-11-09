@@ -760,6 +760,7 @@ class DeepCGH(object):
         self.path = model_params['path']
         self.shape = data_params['shape']
         self.plane_distance = model_params['plane_distance']
+        self.quantization = 2**model_params['quantization']
         self.n_kernels = model_params['n_kernels']
         self.IF = model_params['int_factor']
         self.wavelength = model_params['wavelength']
@@ -962,6 +963,17 @@ class DeepCGH(object):
     
     def __get_model_fn(self):
         
+        
+        @tf.custom_gradient
+        def quantize(x):
+            quantized = tf.math.round((x + np.pi) * (self.quantization-1) / (2*np.pi))
+            quantized /= (self.quantization-1)
+            quantized *= 2*np.pi
+            quantized -= np.pi
+            def grad(dy):
+                return dy
+            return quantized, grad
+        
         def interleave(x):
             return tf.nn.space_to_depth(input = x,
                                        block_size = self.IF,
@@ -1035,8 +1047,7 @@ class DeepCGH(object):
             img = tf.dtypes.complex(tf.squeeze(x[0], axis=-1), 0.) * tf.math.exp(tf.dtypes.complex(0., tf.squeeze(x[1], axis=-1)))
             img = tf.signal.ifftshift(img, axes = [1, 2])
             fft = tf.signal.ifft2d(img)
-            phase = tf.expand_dims(tf.math.angle(fft), axis=-1)
-            return phase
+            return quantize(tf.math.angle(fft))[..., tf.newaxis]
         
         
         def __prop__(cf_slm, H = None, center = False):

@@ -36,6 +36,7 @@ model = {
         'path' : 'DeepCGH_Models/Disks',
         'num_frames':5,
         'int_factor':16,
+        'quantization':8,
         'n_kernels':[64, 128, 256],
         'plane_distance':0.05,
         'focal_point':0.2,
