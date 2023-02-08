@@ -113,27 +113,28 @@ def get_propagate(data, model):
     ps = model['pixel_size']
     Hs = model['HMatrix']
 
+
     def __prop__(cf_slm, H = None, center = False):
         if not center:
-            cf_slm *= H
-        cf = tf.signal.ifftshift(tf.signal.fft2d(tf.signal.fftshift(cf_slm, axes = [2, 3])), axes = [2, 3])
-        return tf.cast(tf.square(tf.abs(cf))[..., tf.newaxis], dtype=tf.dtypes.float32)
+            H = tf.broadcast_to(tf.expand_dims(H, axis=0), tf.shape(cf_slm))
+            cf_slm *= tf.signal.fftshift(H, axes = [1, 2])
+        fft = tf.signal.ifftshift(tf.signal.fft2d(tf.signal.fftshift(cf_slm, axes = [1, 2])), axes = [1, 2])
+        img = tf.cast(tf.expand_dims(tf.abs(tf.pow(fft, 2)), axis=-1), dtype=tf.dtypes.float32)
+        return img
+        
+    def __phi_slm(phi_slm):
+        i_phi_slm = tf.dtypes.complex(np.float32(0.), tf.squeeze(phi_slm, axis=-1))
+        return tf.math.exp(i_phi_slm)
     
-    
-    def propagate(modulation):
-        frames = []
-        cf_modulation = tf.math.exp(tf.complex(0., modulation))
-        for H in Hs:
-            frames.append(__prop__(cf_modulation, tf.keras.backend.constant(H, dtype = tf.complex64)))
-        
-        frames.insert(shape[-1] // 2, __prop__(cf_modulation, center = True))
-        
-        y_pred_ = tf.concat(values = frames, axis = -1)
-        
-        # time averaging along axis 1
-        y_pred = tf.math.reduce_mean(y_pred_, axis = 1, keepdims=False)
-        
-        return y_pred
+    def propagate(phi_slm):
+                    frames = []
+                    cf_slm = __phi_slm(phi_slm)
+                    for H in Hs:
+                        frames.append(__prop__(cf_slm, tf.keras.backend.constant(H, dtype = tf.complex64)))
+                    
+                    frames.insert(shape[-1] // 2, __prop__(cf_slm, center = True))
+                    
+                    return tf.concat(values=frames, axis = -1)
     return propagate
 
 def accuracy(y_true, y_pred):
