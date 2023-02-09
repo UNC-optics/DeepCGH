@@ -121,14 +121,10 @@ def get_propagate(data, model):
         fft = tf.signal.ifftshift(tf.signal.fft2d(tf.signal.fftshift(cf_slm, axes = [1, 2])), axes = [1, 2])
         img = tf.cast(tf.expand_dims(tf.abs(tf.pow(fft, 2)), axis=-1), dtype=tf.dtypes.float32)
         return img
-        
-    def __phi_slm(phi_slm):
-        i_phi_slm = tf.dtypes.complex(np.float32(0.), tf.squeeze(phi_slm, axis=-1))
-        return tf.math.exp(i_phi_slm)
     
     def propagate(phi_slm):
                     frames = []
-                    cf_slm = __phi_slm(phi_slm)
+                    cf_slm = tf.math.exp(tf.dtypes.complex(np.float32(0.), tf.squeeze(phi_slm, axis=-1)))
                     for H in Hs:
                         frames.append(__prop__(cf_slm, tf.keras.backend.constant(H, dtype = tf.complex64)))
                     
