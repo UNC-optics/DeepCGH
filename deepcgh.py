@@ -1042,7 +1042,7 @@ class DeepCGH(object):
         
         def __ifft_AmPh(x):
             '''
-            Input is Amp x[1] and Phase x[0]. Spits out the angle of ifft.
+            Input is Amp x[0] and Phase x[1]. Spits out the angle of ifft.
             '''
             img = tf.dtypes.complex(tf.squeeze(x[0], axis=-1), 0.) * tf.math.exp(tf.dtypes.complex(0., tf.squeeze(x[1], axis=-1)))
             img = tf.signal.ifftshift(img, axes = [1, 2])
