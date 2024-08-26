@@ -671,7 +671,7 @@ class DeepDCGH(object):
         
         def __ifft_AmPh(x):
             '''
-            Input is Amp x[1] and Phase x[0]. Spits out the angle of ifft.
+            Input is Amp x[0] and Phase x[1]. Spits out the angle of ifft.
             '''
             img = tf.complex(x[0], 0.) * tf.math.exp(tf.complex(0., x[1]))
             img_t = tf.transpose(img, perm = [0, 3, 1, 2])
